@@ -8,9 +8,9 @@
 import UIKit
 
 class PokemonListViewController: UIViewController {
-    
+
     private var service = PokemonListService()
-    private var viewModel : PokemonListViewModel?
+    private var viewModel: PokemonListViewModel?
     
     private lazy var tableView: UITableView = {
         let aTable = UITableView()
@@ -21,26 +21,35 @@ class PokemonListViewController: UIViewController {
         view.addSubview(aTable)
         return aTable
     }()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        setupConstrains()
+        setupConstraints()
         self.viewModel = PokemonListViewModel(service: self.service)
+        
         self.viewModel?.getPokemons {
             self.tableView.reloadData()
         }
-        
     }
     
-    private func  setupView() {
-        self.view.backgroundColor = .blue
-        self.title = "Pokemon List"
-        self.navigationController?.navigationBar
-            .prefersLargeTitles = true
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if !UserDefaults.standard.isUserLoggedIn {
+            let loginVC = LoginViewController()
+            loginVC.modalPresentationStyle = .fullScreen
+            self.present(loginVC, animated: false)
+        }
     }
-
-    private func setupConstrains () {
+    private func setupView (){
+        self.title = "Pokemon List"
+        self.view.backgroundColor = .white
+        self.navigationController?.navigationBar.prefersLargeTitles = true
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self, action: #selector(logOut))
+    }
+    
+    private func setupConstraints (){
         NSLayoutConstraint.activate([
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -48,16 +57,31 @@ class PokemonListViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.topAnchor)
         ])
     }
-
+    
+    @objc private func logOut() {
+        UserDefaults.standard.isUserLoggedIn = false
+        let loginVC = LoginViewController()
+        loginVC.modalPresentationStyle = .fullScreen
+        self.present(loginVC, animated: false)
+    }
+    
 }
 
-extension PokemonListViewController : UITableViewDelegate {
+
+extension PokemonListViewController: UITableViewDelegate {
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print("Selected a cell")
+        self.viewModel?.getPokemon(at: indexPath.row, onComplete: { pokemon in
+            let vc = PokemonDetailViewController()
+            vc.pokemonURL = pokemon.url
+            self.navigationController?.pushViewController(vc, animated: true)
+        })
     }
+    
 }
 
 extension PokemonListViewController: UITableViewDataSource {
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         self.viewModel?.pokemons.count ?? 0
     }
@@ -66,11 +90,10 @@ extension PokemonListViewController: UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: String(describing: PokemonListTableViewCell.self), for: indexPath) as? PokemonListTableViewCell else {
             return UITableViewCell()
         }
+        
         if let pokemon = self.viewModel?.pokemons[indexPath.row] {
             cell.name = pokemon.name
-            
         }
         return cell
-        
     }
 }

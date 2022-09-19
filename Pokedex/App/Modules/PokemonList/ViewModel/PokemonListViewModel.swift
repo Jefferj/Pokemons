@@ -9,10 +9,10 @@ import Foundation
 
 class PokemonListViewModel {
     
-    private var service : PokemonListService
+    private var service: PokemonListService
     var pokemons = [PokemonDTO]()
     
-    init(service: PokemonListService) {
+    init(service: PokemonListService){
         self.service = service
     }
     
@@ -23,6 +23,11 @@ class PokemonListViewModel {
         } onError: { error in
             print(error)
         }
-
     }
+    
+    func getPokemon(at index: Int, onComplete: @escaping (PokemonDTO) -> Void) {
+        let pokemon = pokemons[index]
+        onComplete(pokemon)
+    }
+    
 }
